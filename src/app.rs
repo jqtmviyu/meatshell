@@ -450,7 +450,8 @@ fn setup_macos_platform() {
 fn default_macos_renderer_name() -> Option<String> {
     // Older Intel Macs on Monterey have been observed to crash deep inside the
     // Metal stack during startup (`gpuResourceID` selector on Metal texture
-    // objects). Avoid the GPU path there and default to the software renderer.
+    // objects). On the affected machine, the femtovg renderer still works, so
+    // prefer it on macOS 12 and older instead of the default auto-selected path.
     let out = std::process::Command::new("sw_vers")
         .arg("-productVersion")
         .output()
@@ -460,7 +461,7 @@ fn default_macos_renderer_name() -> Option<String> {
     }
     let version = String::from_utf8(out.stdout).ok()?;
     let major = version.trim().split('.').next()?.parse::<u32>().ok()?;
-    (major <= 12).then(|| "software".to_string())
+    (major <= 12).then(|| "femtovg".to_string())
 }
 
 pub fn run() -> Result<()> {
