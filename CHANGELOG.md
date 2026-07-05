@@ -3,6 +3,18 @@
 All notable changes are documented here. 本文件记录所有重要变更。
 中英对照（中文在前，English after）.
 
+## [0.5.6] - 2026-07-06
+
+### 修复 / Fixed
+
+- **修复分屏终端在右侧资源面板展开时被错误压缩到 10 列。** 显式绑定分屏内容区尺寸，并仅在终端视图拥有真实布局尺寸后才上报 resize，避免右侧资源面板展开时的瞬时 0 宽布局被折算成 10 列，导致右侧终端内容异常换行。
+
+---
+
+### Fixed
+
+- **Avoid transient 10-column terminal resize in split panes.** Explicitly size the split-pane content area and only report terminal resize events after the terminal view has a real layout size. This prevents right resource panel changes from turning a transient zero-width layout into a 10-column terminal resize.
+
 ## [0.5.5] - 2026-07-05
 
 ### 新增 / Added
