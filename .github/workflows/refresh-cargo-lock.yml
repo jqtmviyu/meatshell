@@ -1,0 +1,48 @@
+name: Refresh Cargo.lock
+
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "v*"
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - .github/workflows/refresh-cargo-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Regenerate Cargo.lock
+        run: cargo generate-lockfile
+
+      - name: Commit updated Cargo.lock
+        shell: bash
+        run: |
+          set -eu
+          if git diff --quiet -- Cargo.lock; then
+            echo "Cargo.lock is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.lock
+          git commit -m "ci: refresh Cargo.lock"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}

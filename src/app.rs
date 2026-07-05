@@ -1385,25 +1385,35 @@ pub fn run() -> Result<()> {
     }
 
     // --- In-app update check (#48) -----------------------------------------
+    let repo_url = env!("CARGO_PKG_REPOSITORY");
+    let latest_release_url = format!("{repo_url}/releases/latest");
+    let latest_release_api_url = format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        repo_url
+            .trim_end_matches('/')
+            .trim_start_matches("https://github.com/")
+    );
+
     // "Download" on the banner opens the latest-release page in the browser.
-    window.on_open_update_url(move || {
-        let url = "https://github.com/jeff141/meatshell/releases/latest";
-        #[cfg(windows)]
-        let _ = std::process::Command::new("explorer").arg(url).spawn();
-        #[cfg(target_os = "macos")]
-        let _ = std::process::Command::new("open").arg(url).spawn();
-        #[cfg(all(not(windows), not(target_os = "macos")))]
-        let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+    window.on_open_update_url({
+        let url = latest_release_url.clone();
+        move || {
+            #[cfg(windows)]
+            let _ = std::process::Command::new("explorer").arg(&url).spawn();
+            #[cfg(target_os = "macos")]
+            let _ = std::process::Command::new("open").arg(&url).spawn();
+            #[cfg(all(not(windows), not(target_os = "macos")))]
+            let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+        }
     });
     // The open-source link in the About dialog opens the project page.
     window.on_open_repo(move || {
-        let url = "https://github.com/jeff141/meatshell";
         #[cfg(windows)]
-        let _ = std::process::Command::new("explorer").arg(url).spawn();
+        let _ = std::process::Command::new("explorer").arg(repo_url).spawn();
         #[cfg(target_os = "macos")]
-        let _ = std::process::Command::new("open").arg(url).spawn();
+        let _ = std::process::Command::new("open").arg(repo_url).spawn();
         #[cfg(all(not(windows), not(target_os = "macos")))]
-        let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+        let _ = std::process::Command::new("xdg-open").arg(repo_url).spawn();
     });
     // Query the GitHub releases API on a background thread; if a newer version
     // exists, flip the banner on. Best-effort: any network/parse error is
@@ -1413,7 +1423,7 @@ pub fn run() -> Result<()> {
         let weak = window.as_weak();
         std::thread::spawn(move || {
             let body =
-                match ureq::get("https://api.github.com/repos/jeff141/meatshell/releases/latest")
+                match ureq::get(&latest_release_api_url)
                     .set("User-Agent", "meatshell-update-check")
                     .timeout(std::time::Duration::from_secs(8))
                     .call()

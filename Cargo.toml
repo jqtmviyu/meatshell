@@ -5,12 +5,15 @@ edition = "2021"
 authors = ["meatshell contributors"]
 description = "A lightweight FinalShell-style SSH/terminal client written in Rust + Slint"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/your/meatshell"
+repository = "https://github.com/jqtmviyu/meatshell"
 readme = "README.md"
 rust-version = "1.75"
 
 [dependencies]
-slint = { version = "1.8", features = ["compat-1-2"] }
+# Slint 1.16.1 regressed startup on older macOS releases by calling
+# `NSView.displayLink(target:selector:)`, which only exists on macOS 14+.
+# Keep the whole Slint stack on 1.16.0 until upstream ships a compatible fix.
+slint = { version = "=1.16.0", features = ["compat-1-2"] }
 # ICU4X (pulled in by Slint's text layout) spams stderr with raw `eprintln!`
 # ("ICU4X data error: No segmentation model for language: ja") because its
 # `log` shim falls back to eprintln when the `logging` feature is off. Turning
@@ -18,7 +21,7 @@ slint = { version = "1.8", features = ["compat-1-2"] }
 # subscriber, where init_tracing silences the `icu_provider` target.
 icu_provider = { version = "2", features = ["logging"] }
 # Direct access to the winit window/events (OS file-drop for drag-and-drop upload).
-i-slint-backend-winit = "1.16"
+i-slint-backend-winit = "=1.16.0"
 # Raw HWND access (matches winit's rwh 0.6) for the Win11 rounded-corner + shadow
 # DWM tweaks on the frameless window (#162 / #166). Only used under cfg(windows).
 raw-window-handle = "0.6"
@@ -92,10 +95,10 @@ arboard = { version = "3", features = ["wayland-data-control"] }
 # The default stays femtovg — see the renderer history note in main.rs (#108/#129).
 # Windows/Linux never compile Skia.
 [target.'cfg(target_os = "macos")'.dependencies]
-slint = { version = "1.8", features = ["renderer-skia"] }
+slint = { version = "=1.16.0", features = ["renderer-skia"] }
 
 [build-dependencies]
-slint-build = "1.8"
+slint-build = "=1.16.0"
 
 # Embeds assets/meatshell.ico into the .exe so Explorer / taskbar / shortcuts
 # show the app icon. Windows-only; ignored on other targets.
