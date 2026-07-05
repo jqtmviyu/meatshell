@@ -424,6 +424,9 @@ fn setup_macos_platform() {
         if let Some(r) = v.strip_prefix("winit-").filter(|r| !r.is_empty()) {
             builder = builder.with_renderer_name(r.to_string());
         }
+    } else if let Some(r) = default_macos_renderer_name() {
+        tracing::warn!("forcing macOS renderer to {r}");
+        builder = builder.with_renderer_name(r);
     }
     builder = builder.with_window_attributes_hook(|attrs| {
         attrs
@@ -441,6 +444,23 @@ fn setup_macos_platform() {
             tracing::warn!("winit backend build failed ({e}); immersive macOS titlebar disabled")
         }
     }
+}
+
+#[cfg(target_os = "macos")]
+fn default_macos_renderer_name() -> Option<String> {
+    // Older Intel Macs on Monterey have been observed to crash deep inside the
+    // Metal stack during startup (`gpuResourceID` selector on Metal texture
+    // objects). Avoid the GPU path there and default to the software renderer.
+    let out = std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let version = String::from_utf8(out.stdout).ok()?;
+    let major = version.trim().split('.').next()?.parse::<u32>().ok()?;
+    (major <= 12).then(|| "software".to_string())
 }
 
 pub fn run() -> Result<()> {
